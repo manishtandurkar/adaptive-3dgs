@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.pyc
+
+scenes/
+results/
+
+build/
+cmake-build-*/
+
+.DS_Store
+.vscode/
+.idea/
+
+.claude/settings.local.json
