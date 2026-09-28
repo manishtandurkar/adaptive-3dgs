@@ -2,9 +2,9 @@
 
 Resource-pressure-aware adaptive rendering for 3D Gaussian Splatting (3DGS).
 
-A 3DGS renderer that adjusts rendered detail live based on the device's own resource
-pressure (GPU memory headroom, frame time, thermal/power state) rather than network
-bandwidth or camera visibility. Final-year research project; the goal is a working system
+A 3DGS renderer that adjusts its Gaussian budget live based on the device's own measured
+state (GPU memory headroom, thermal/throttle state, power state, with frame time as a
+supporting signal) rather than camera distance, network bandwidth, or a fixed budget. Final-year research project; the goal is a working system
 plus a paper with benchmarked results.
 
 ## Status
@@ -13,7 +13,7 @@ Week 1 (setup) in progress.
 
 - [x] Brush builds and renders the bonsai scene on macOS (Apple M5, Metal)
 - [ ] Brush verified on the Windows test laptop
-- [ ] Literature re-check (IEEE Xplore, ACM DL, arXiv)
+- [x] Literature re-check: gap holds for 3DGS, claim narrowed (see `research.md`)
 
 ## System overview
 

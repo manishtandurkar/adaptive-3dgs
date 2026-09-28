@@ -20,17 +20,41 @@ fit on resource-constrained devices (laptops, phones, VR headsets, older GPUs).
   Not our angle — we consume an existing compressed scene, we do not invent compression.
 - **Network/visibility-adaptive streaming** (Voyager, LapisGS, CAGS, SplatStream) — adapts
   detail live, but reacts to bandwidth or camera-visibility, not on-device resource state.
+- **Distance/view-based LOD** (Octree-GS, Hierarchical 3DGS, LODGE, Atlas) — picks detail
+  from camera distance or projected size, not device state.
+- **Fixed-budget / device-tier methods** (FLoD, MoQSplat, GaussAnything, Milef et al. CLoD)
+  — the closest competitors. They cap Gaussian count or VRAM at a developer-set number
+  (FLoD: level chosen once per device; MoQSplat: fixed M_max; GaussAnything: fixed budget,
+  with frame-time slack pacing only update work). None reads live device state.
+- **Outside 3DGS**: Unity Adaptive Performance changes LOD live from device thermal level;
+  US patent 10,491,711 picks VR video quality from device temperature. So thermal-aware
+  adaptive rendering in general is not new.
+
+Full comparison with sources: `research.md` (literature check, 2026-09-28).
 
 ## The gap this project targets
 
-No existing system adapts rendering detail live based on the device's own internal resource
-pressure — available GPU memory right now, thermal/frame-time degradation, battery state —
-as opposed to network conditions or on-screen visibility. The closest related paper
-("Splats under Pressure", 2026) explicitly flags this as unexplored future work.
+No existing 3DGS system changes its Gaussian budget or LOD tier at runtime based on
+measured device state — available GPU memory right now, thermal/throttle state, and
+power/battery state — as opposed to viewpoint, network bandwidth, or a fixed developer-set
+budget. The closest related paper ("Splats under Pressure", 2026) is an offline benchmark
+with hand-picked LOD tiers and does not adapt anything.
+
+Claim wording: "To our knowledge, this is the first 3DGS renderer that adapts its Gaussian
+budget or LOD tier at runtime to measured device state (available GPU memory,
+thermal/throttle status, and power state), rather than to viewpoint, network bandwidth, or
+a fixed developer-set budget."
 
 **Framing to keep consistent everywhere (code comments, docs, paper):** "resource-pressure-
 aware", not "network-adaptive" or "visibility-adaptive" — that distinction is the entire
 novelty claim and must not get blurred.
+
+- Headline signals are GPU memory headroom and thermal/throttle state. Frame time is a
+  supporting input, not the novelty (GaussAnything already uses frame-time slack at runtime).
+- Never claim "first thermal-aware adaptive rendering/LOD" in general — Unity Adaptive
+  Performance and the patent are counter-examples. The claim is specific to 3DGS.
+- Don't narrow the claim to a platform (e.g. "laptops only"); the controller is
+  device-agnostic.
 
 ## System components
 
@@ -41,18 +65,29 @@ novelty claim and must not get blurred.
    and DX12 from one codebase. Status: pending week-1 test on both machines; fallback is
    gsplat on an NVIDIA machine. Not built from scratch. Treat as a dependency, not a target
    for modification unless strictly necessary for instrumentation hooks.
-2. **Resource monitor** — continuously samples GPU memory headroom, frame time, and
-   (where available) thermal/power state. This is standard systems instrumentation, not ML.
+2. **Resource monitor** — continuously samples GPU memory headroom, thermal/throttle state,
+   power/battery state, and frame time. Thermal and power are required, not optional — they
+   are core to the claim. This is standard systems instrumentation, not ML.
    wgpu does not expose free VRAM, so memory is read from OS APIs: DXGI
    `QueryVideoMemoryInfo` on Windows, Metal `recommendedMaxWorkingSetSize` /
    `currentAllocatedSize` on macOS. Apple Silicon has unified memory, so "GPU memory
    headroom" there must be defined explicitly in the paper.
 3. **Adaptive decision policy** — maps monitor readings to a detail-level decision
    (upgrade/downgrade rendered Gaussian count or LOD tier) each frame or on a sampling
-   interval.
-4. **Benchmark harness** — runs baseline (fixed detail, no adaptation) vs. adaptive version
-   across devices, logging memory usage, frame time, and visual-quality delta (e.g. PSNR/
-   SSIM against full-detail reference).
+   interval. Uses hysteresis so tiers don't oscillate, and prefers an importance-ordered
+   Gaussian list so a lower tier is "render the first N".
+4. **Benchmark harness** — runs the adaptive version against these baselines across
+   devices, logging memory usage, frame time, and visual-quality delta (e.g. PSNR/SSIM
+   against full-detail reference):
+   - fixed detail, no adaptation
+   - static per-device tier (FLoD-style)
+   - distance-based LOD (Octree-GS/LODGE-style)
+   - fixed VRAM budget with eviction (MoQSplat-style)
+   - thermal-warning step-down (Unity Adaptive Performance-style)
+
+   Beating the last two is what shows the contribution is more than engineering. Pressure
+   must be induced without `nvidia-smi` where the GPU isn't NVIDIA (e.g. a separate
+   memory-filling process, sustained-load runs until throttling).
 5. **Live demo layer** — on-screen overlay showing current detail level, memory pressure,
    and frame time in real time during interactive fly-through.
 
@@ -122,3 +157,8 @@ quality comparison.
   as solid.
 - Brush's README claims it is "generally faster than gsplat" — do not cite this in the paper
   unless measured ourselves.
+- Open literature checks before submitting (see `research.md`): read Milef et al. CLoD
+  "budget-based rendering" in full (does frame time set the budget? highest priority), read
+  Atlas §6 (runtime Gaussian management), and pull the Google Scholar "Cited by" list for
+  "Splats under Pressure" (arXiv 2604.07177). Several comparators are unreviewed 2026
+  preprints — verify each before citing.
