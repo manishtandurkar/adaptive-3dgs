@@ -9,11 +9,13 @@ plus a paper with benchmarked results.
 
 ## Status
 
-Week 1 (setup) in progress.
+Week 2 (resource monitor) in progress. Week 1 setup done on macOS.
 
 - [x] Brush builds and renders the bonsai scene on macOS (Apple M5, Metal)
 - [ ] Brush verified on the Windows test laptop
 - [x] Literature re-check: gap holds for 3DGS, claim narrowed (see `research.md`)
+- [x] Resource monitor, macOS backend (`monitor/`, see `monitor/README.md`)
+- [ ] Resource monitor, Windows backend (DXGI)
 
 ## System overview
 
@@ -29,12 +31,15 @@ Week 1 (setup) in progress.
 
 ```
 external/brush/        Brush renderer (git submodule, our fork)
+monitor/               Resource-pressure monitor (Rust crate, linked into Brush)
 scripts/get_scenes.sh  Downloads pretrained scenes into scenes/
 scenes/                Scene files (not committed)
 CLAUDE.md              Project brief and conventions
 ```
 
 ## Setup
+
+Windows teammates: follow the step-by-step guide in `instructions.md`.
 
 ### 1. Clone
 

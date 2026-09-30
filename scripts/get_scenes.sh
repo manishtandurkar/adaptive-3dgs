@@ -10,5 +10,10 @@ if [ ! -f "$ROOT/scenes/bonsai/point_cloud.ply" ]; then
     curl -L --fail -o "$ROOT/scenes/bonsai/point_cloud.ply" \
         "$BASE/bonsai/point_cloud/iteration_30000/point_cloud.ply"
 fi
+if [ ! -f "$ROOT/scenes/bonsai/cameras.json" ]; then
+    echo "Downloading bonsai cameras.json (~117 KB)..."
+    curl -L --fail -o "$ROOT/scenes/bonsai/cameras.json" \
+        "$BASE/bonsai/cameras.json"
+fi
 
 echo "Scenes ready in $ROOT/scenes"
